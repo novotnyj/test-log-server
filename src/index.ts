@@ -4,30 +4,18 @@ import express, {
     Response,
 } from 'express';
 import fs from 'fs';
+import { TcpServer } from './TcpServer';
+import { createFileIfNotExists } from './helpers';
 
 const DEFAULT_PORT = 3000;
+const DEFAULT_TCP_PORT = '9001';
 
 const app: Express = express();
 const port = process.env.PORT || DEFAULT_PORT;
 const logFilePath = process.env.LOG_PATH || './logs/requests.txt';
 
-const createFileIfNotExists = (path: string) => {
-    // Check if file exists
-    if (fs.existsSync(path)) {
-        return;
-    }
-    // Extract directory path and file name
-    const pathParts = path.split('/');
-    const fileName = pathParts.pop();
-    const directoryPath = pathParts.join('/');
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(directoryPath)) {
-        fs.mkdirSync(directoryPath);
-    }
-    // Create file
-    console.log(`Creating file ${fileName} in ${directoryPath}...`);
-    fs.writeFileSync(path, '');
-};
+const server = new TcpServer(process.env.TCP_PORT || DEFAULT_TCP_PORT, logFilePath);
+server.start();
 
 createFileIfNotExists(logFilePath);
 
@@ -38,8 +26,9 @@ const logRequest = async (req: Request) => {
         body,
         query,
     };
-    const requestString = `${(new Date()).toISOString()} [${req.method}]: ${JSON.stringify(request)}\n`;
-    fs.appendFile(logFilePath, requestString, (err) => {    
+    const requestString = `${(new Date()).toISOString()} [${req.method}]: ${JSON.stringify(request)}`;
+    console.log(requestString);
+    fs.appendFile(logFilePath, `${requestString}\n`, (err) => {
         console.log(err);
     });
 };
